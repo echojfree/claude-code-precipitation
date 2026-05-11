@@ -30,9 +30,9 @@ Show curator state: when it last ran, how many runs, whether it's paused, and th
 ### `/curator run`
 Trigger a curator consolidation run immediately.
 **How to execute**:
-1. Run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/track_usage.py" curator-check --project "$(pwd)"` — if it says "run", proceed
+1. Run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/track_usage.py" curator-check --project "${CLAUDE_PROJECT_DIR:-$PWD}"` — if it says "run", proceed
 2. **Phase 1 — Lifecycle Transitions**:
-   a. Run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/track_usage.py" get-stale --project "$(pwd)"`
+   a. Run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/track_usage.py" get-stale --project "${CLAUDE_PROJECT_DIR:-$PWD}"`
    b. For items marked "ready_to_archive", check if corresponding memory files exist in `.claude/memory/` and move them to `.claude/memory/archive/`
    c. For items marked "stale", note them but don't archive yet
 3. **Phase 2 — Memory Consolidation**:
@@ -44,7 +44,7 @@ Trigger a curator consolidation run immediately.
    a. Look for patterns in usage_log that appear 5+ times across different sessions
    b. If a pattern suggests a reusable skill/workflow, suggest it to the user
    c. Optionally generate a draft skill file
-5. Mark curator run complete: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/track_usage.py" curator-mark-run --project "$(pwd)"`
+5. Mark curator run complete: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/track_usage.py" curator-mark-run --project "${CLAUDE_PROJECT_DIR:-$PWD}"`
 6. Report what was done: items archived, memories consolidated, skills proposed
 
 ### `/curator pause`
@@ -58,7 +58,7 @@ Resume automatic curation.
 ### `/curator stats`
 Show detailed lifecycle statistics about the knowledge base.
 **How to execute**:
-1. Run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/track_usage.py" stats --project "$(pwd)"`
+1. Run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/track_usage.py" stats --project "${CLAUDE_PROJECT_DIR:-$PWD}"`
 2. Additionally, scan `.claude/memory/` directory to count:
    - Total memory files
    - Files by type (user/feedback/project/reference)

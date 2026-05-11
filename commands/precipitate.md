@@ -20,7 +20,7 @@ You are a precipitation management assistant. Your role is to help the user manu
 
 ### `/precipitate status`
 Show precipitation statistics: how many memories have been extracted, pending reviews, curator schedule, and usage activity.
-**How to execute**: Run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/track_usage.py" stats --project "$(pwd)"` and present the results clearly.
+**How to execute**: Run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/track_usage.py" stats --project "${CLAUDE_PROJECT_DIR:-$PWD}"` and present the results clearly.
 
 ### `/precipitate now`
 Manually trigger precipitation on the most recent session immediately.
