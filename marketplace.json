@@ -1,0 +1,24 @@
+{
+  "name": "precipitation-marketplace",
+  "owner": {
+    "name": "echojfree"
+  },
+  "plugins": [
+    {
+      "name": "precipitation",
+      "source": {
+        "source": "github",
+        "repo": "echojfree/claude-code-precipitation"
+      },
+      "category": "productivity",
+      "tags": ["memory", "learning", "knowledge-base", "curation", "self-improvement"],
+      "description": "Hermes-style automatic knowledge precipitation — learn from every session, accumulate reusable patterns, and self-update over time. Auto-extracts lessons, preferences, and patterns from your Claude Code sessions.",
+      "version": "1.0.0",
+      "strict": true
+    }
+  ],
+  "metadata": {
+    "version": "1.0.0",
+    "description": "Marketplace for the Claude Code Precipitation Plugin — automatic knowledge accumulation and curation"
+  }
+}
