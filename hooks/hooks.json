@@ -21,17 +21,29 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/track_usage.py\" track --source skill --name \"$CLAUDE_TOOL_NAME\" --session \"$CLAUDE_SESSION_ID\" --project \"$(pwd)\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/track_usage.py\" hook-event --source skill",
             "timeout": 5
           }
         ]
       },
       {
+        "matcher": "Write|Edit|Read|Grep|Glob|Bash|Task|Agent|WebSearch|WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/track_usage.py\" hook-event --source tool",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
         "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/track_usage.py\" track --source tool --name \"$CLAUDE_TOOL_NAME\" --session \"$CLAUDE_SESSION_ID\" --project \"$(pwd)\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/track_usage.py\" hook-event --source tool",
             "timeout": 5
           }
         ]

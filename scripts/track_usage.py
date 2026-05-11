@@ -7,13 +7,19 @@ scheduling periodic consolidation runs.
 
 State file: .claude/precip_state.json (per-project)
 
-Usage:
-    python3 track_usage.py track --source <skill|tool> --name <name> \
+Hook Integration:
+    When called from Claude Code hooks, the hook input JSON is provided on stdin.
+    Use the "hook-event" subcommand to read stdin and auto-extract fields.
+    The CLAUDE_PROJECT_DIR env var is used as the project path.
+
+CLI Usage:
+    python track_usage.py hook-event --source <skill|tool>
+    python track_usage.py track --source <skill|tool> --name <name> \\
         --session <id> --project <path>
-    python3 track_usage.py session-heartbeat --session <id> --project <path>
-    python3 track_usage.py curator-check --project <path> [--interval-days 7]
-    python3 track_usage.py curator-mark-run --project <path>
-    python3 track_usage.py stats --project <path>
+    python track_usage.py session-heartbeat --session <id> --project <path>
+    python track_usage.py curator-check --project <path> [--interval-days 7]
+    python track_usage.py curator-mark-run --project <path>
+    python track_usage.py stats --project <path>
 """
 
 from __future__ import annotations
@@ -105,11 +111,87 @@ def _default_state() -> Dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
+# Hook stdin parser
+# ---------------------------------------------------------------------------
+
+def _read_hook_input() -> Optional[Dict[str, Any]]:
+    """Read hook input JSON from stdin (provided by Claude Code hook executor).
+    Returns None if stdin is empty or unreadable.
+    """
+    try:
+        raw = sys.stdin.read()
+        if not raw or not raw.strip():
+            return None
+        return json.loads(raw)
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def _extract_fields(data: Dict[str, Any]) -> Dict[str, str]:
+    """Extract tool_name and session_id from a PostToolUse/UserPromptSubmit
+    hook input. Field names vary by hook event type.
+    """
+    result: Dict[str, str] = {}
+    result["tool_name"] = data.get("tool_name", data.get("name", "unknown"))
+    result["session_id"] = data.get("session_id", data.get("conversation_id", "unknown"))
+    result["hook_event"] = data.get("hook_event_name", "unknown")
+    return result
+
+
+# ---------------------------------------------------------------------------
 # Commands
 # ---------------------------------------------------------------------------
 
+def cmd_hook_event(args: argparse.Namespace) -> int:
+    """Process a hook event from stdin. Extracts tool_name and session_id
+    automatically from the hook input JSON, uses CLAUDE_PROJECT_DIR for
+    project path.
+    """
+    hook_input = _read_hook_input()
+    if hook_input is None:
+        return 0
+
+    fields = _extract_fields(hook_input)
+    project_dir = os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+
+    state_path = _resolve_state_path(project_dir)
+    state = _load_state(state_path)
+    now = datetime.now(timezone.utc).isoformat()
+
+    name = fields["tool_name"]
+    session_id = fields["session_id"]
+
+    if name not in state["usage_log"]:
+        state["usage_log"][name] = {
+            "source": args.source,
+            "first_used_at": now,
+            "last_used_at": now,
+            "use_count": 0,
+            "sessions": [],
+        }
+
+    entry = state["usage_log"][name]
+    entry["last_used_at"] = now
+    entry["use_count"] += 1
+    if session_id not in entry["sessions"]:
+        entry["sessions"].append(session_id)
+        if len(entry["sessions"]) > 50:
+            entry["sessions"] = entry["sessions"][-50:]
+
+    if session_id not in state["sessions"]:
+        state["sessions"][session_id] = {
+            "first_activity_at": now,
+            "last_activity_at": now,
+            "message_count": 0,
+        }
+    state["sessions"][session_id]["last_activity_at"] = now
+
+    _save_state(state_path, state)
+    return 0
+
+
 def cmd_track(args: argparse.Namespace) -> int:
-    """Record a tool or skill usage event."""
+    """Record a tool or skill usage event (explicit CLI mode)."""
     state_path = _resolve_state_path(args.project)
     state = _load_state(state_path)
     now = datetime.now(timezone.utc).isoformat()
@@ -315,6 +397,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
+    p_he = sub.add_parser("hook-event", help="Process hook event from stdin")
+    p_he.add_argument("--source", required=True, choices=["skill", "tool"])
+
     p_track = sub.add_parser("track", help="Record a usage event")
     p_track.add_argument("--source", required=True, choices=["skill", "tool"])
     p_track.add_argument("--name", required=True)
@@ -348,6 +433,7 @@ def main() -> int:
     args = parser.parse_args()
 
     command_map = {
+        "hook-event": cmd_hook_event,
         "track": cmd_track,
         "session-heartbeat": cmd_session_heartbeat,
         "curator-check": cmd_curator_check,

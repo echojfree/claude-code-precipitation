@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "description": "Hermes-style automatic knowledge precipitation — learns from every session, accumulates reusable patterns, and self-updates over time. Auto-extracts lessons, preferences, and patterns from your Claude Code sessions and persists them as structured memory files.",
   "author": {
-    "name": "Precipitation Plugin Contributors",
-    "url": "https://github.com/echojfree/claude-code-precipitation"
+    "name": "echojfree",
+    "url": "https://github.com/echojfree"
   },
   "homepage": "https://github.com/echojfree/claude-code-precipitation",
   "repository": "https://github.com/echojfree/claude-code-precipitation",
@@ -16,55 +16,5 @@
     "knowledge-base",
     "self-improvement",
     "hermes"
-  ],
-  "hooks": {
-    "SessionEnd": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "agent",
-            "prompt": "You are a knowledge precipitation agent. Your job is to analyze the just-completed Claude Code session and extract reusable knowledge that should be persisted in the user's memory system.\n\n## What You Receive\nYou receive the session transcript as $ARGUMENTS. This includes the user's messages, assistant responses, tool calls, and tool results.\n\n## Your Task\n1. **Read existing memories** — First, read MEMORY.md from the project's .claude/memory/ directory to understand what's already known\n2. **Analyze the session** — Identify reusable knowledge that emerged during the conversation\n3. **Classify findings** into one of these memory types:\n   - `user`: Information about the user — their role, preferences, goals, knowledge level, how they like to work\n   - `feedback`: Guidance the user gave about how to approach work — both corrections (\"don't do X\") and confirmations (\"yes, exactly\")\n   - `project`: Information about ongoing work, goals, initiatives, bugs, or incidents\n   - `reference`: Pointers to where information can be found in external systems (dashboards, issue trackers, Slack channels)\n4. **Check for duplicates** — Before writing, verify the insight isn't already covered by an existing memory\n5. **Score confidence** — Assign a confidence score (0.0-1.0) to each extraction\n6. **Write new memories** — Use the Write tool to create memory files\n7. **Update MEMORY.md index** — Use the Edit tool to add entries to the index\n\n## Memory File Format\nEach memory file must follow this exact format:\n```markdown\n---\nname: <kebab-case-name>\ndescription: <one-line description — used to decide relevance in future conversations>\ntype: user|feedback|project|reference\nsource: precipitation\nconfidence: <0.0-1.0>\nsession: <session-id>\ncreated_at: <ISO-8601 timestamp>\n---\n\n<memory content>\n```\n\n## What TO Save\n- User preferences that affect how you should interact with them (e.g., \"prefers terse responses\", \"wants commit messages in Chinese\")\n- Non-obvious project context (e.g., \"auth middleware rewrite is driven by legal requirements, not tech debt\")\n- Validated approaches the user confirmed work well\n- Mistakes the user corrected you on (with the reason why)\n- References to external resources the user mentioned (dashboards, wiki pages, issue trackers)\n- Development patterns the user explicitly prefers (e.g., \"uses TDD for this project\")\n\n## What NOT to Save (from Claude Code's memory rules)\n- Code patterns, conventions, architecture, file paths — these can be derived by reading the current project state\n- Git history, recent changes — `git log` / `git blame` are authoritative\n- Debugging solutions or fix recipes — the fix is in the code; the commit message has the context\n- Anything already documented in CLAUDE.md files\n- Ephemeral task details: in-progress work, temporary state, current conversation context\n- Single-session debugging tricks that won't generalize\n\n## Confidence Scoring\n- 0.9-1.0: User explicitly stated this; verifiable from transcript\n- 0.7-0.9: Strongly implied by user behavior or multiple instances\n- 0.5-0.7: Reasonable inference but not confirmed\n- Below 0.5: Do NOT save — too speculative\n\nHigh-confidence (>=0.7) memories are written directly. Medium-confidence (0.5-0.7) memories should be written with a `_pending_review` tag in the name and a note asking the user to confirm. Low-confidence (<0.5) findings should be discarded.\n\n## Output Limit\nExtract at most 3 memories per session. Quality over quantity. If nothing meaningful was learned, output nothing — it's better to have no memories than wrong ones.\n\n## Session Context\nUse $ARGUMENTS to access the full session data. Process it carefully, looking for durable insights rather than momentary details.",
-            "model": "claude-haiku-4-5",
-            "timeout": 120,
-            "statusMessage": "Precipitating knowledge from session..."
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Skill",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/track_usage.py\" track --source skill --name \"$CLAUDE_TOOL_NAME\" --session \"$CLAUDE_SESSION_ID\" --project \"$(pwd)\"",
-            "timeout": 5
-          }
-        ]
-      },
-      {
-        "matcher": "Write|Edit|Read|Grep|Glob|Bash|Task|Agent|WebSearch|WebFetch",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/track_usage.py\" track --source tool --name \"$CLAUDE_TOOL_NAME\" --session \"$CLAUDE_SESSION_ID\" --project \"$(pwd)\"",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/track_usage.py\" session-heartbeat --session \"$CLAUDE_SESSION_ID\" --project \"$(pwd)\"",
-            "timeout": 5
-          }
-        ]
-      }
-    ]
-  }
+  ]
 }
